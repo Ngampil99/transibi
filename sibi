@@ -1,0 +1,102 @@
+import firebase_admin
+from firebase_admin import db, credentials
+import time
+from datetime import datetime, timezone
+import tkinter as tk
+
+root = tk.Tk()
+pesanfirebase = None
+
+def timestamp():
+    dt = f"{datetime.now(timezone.utc).timestamp()}"
+    timestamp = dt.split(".")
+    timestamp = int(timestamp[0])
+    return timestamp
+
+def timestamp_millisecond():
+    return timestamp() * 1000
+
+def waktu_sekarang():
+    epoch = timestamp()
+    return time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch))
+
+def Pesan_terima():
+    global pesanfirebase
+    return pesanfirebase
+
+def Pesan_kirim():
+    return "aku lapar nih boi"
+
+def isi_data():
+    return {"message": Pesan_kirim(), "senderId": "user2", "timestamp": timestamp_millisecond()}
+
+def get_all_messages(ref):
+    messages = ref.get()
+    all_messages = []
+    for key, message in messages.items():
+        all_messages.append(message)
+    return all_messages
+
+def get_latest_message(messages, sender_id):
+    latest_message = None
+    latest_timestamp = 0
+    for message in messages:
+        if message['senderId'] == sender_id and message['timestamp'] > latest_timestamp:
+            latest_timestamp = message['timestamp']
+            latest_message = message['message']
+    return latest_message
+
+def firebase():
+    cred = credentials.Certificate("trans-sibi-firebase-adminsdk-ekajf-85bc85107a.json")
+    firebase_admin.initialize_app(cred, {"databaseURL": "https://trans-sibi-default-rtdb.firebaseio.com/"})
+    ref = db.reference("/messages")
+    ref.push().update(isi_data())
+    return get_all_messages(ref)
+
+def Tampilkan():
+    global pesanfirebase
+    messages = firebase()
+    latest_message_user1 = get_latest_message(messages, 'user1')
+    pesanfirebase = latest_message_user1
+    print("Latest message from user1:", latest_message_user1)
+
+def update_time(label):
+    label.config(text=waktu_sekarang())
+    root.after(1000, update_time, label)
+
+def show_hello_world():
+    root.attributes('-fullscreen', True)
+    root.configure(bg="white")
+
+    label_pesan = tk.Label(root, text=Pesan_terima(), fg="black", font=("Helvetica", 18))
+    label_pesan.pack(expand=True, fill="both")
+
+    label_time = tk.Label(root, text=waktu_sekarang(), fg="black", font=("Helvetica", 14))
+    label_time.pack(expand=True, fill="both")
+    update_time(label_time)
+
+    root.bind("<Control-c>", on_ctrl_c)
+
+    root.mainloop()
+
+def on_ctrl_c(event):
+    root.destroy()
+
+def flip_display():
+    Tampilkan()
+    root.attributes('-fullscreen', True)
+    root.configure(bg="white")
+
+    label_pesan = tk.Label(root, text=Pesan_terima(), fg="black", font=("Helvetica", 18))
+    label_pesan.pack(expand=True, fill="both")
+
+    label_time = tk.Label(root, text=waktu_sekarang(), fg="black", font=("Helvetica", 14))
+    label_time.pack(expand=True, fill="both")
+    update_time(label_time)
+
+    root.bind("<Control-c>", on_ctrl_c)
+
+    root.mainloop()
+
+Tampilkan()
+flip_display()
